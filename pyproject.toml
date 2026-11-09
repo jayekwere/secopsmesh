@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "secopsmesh"
+version = "0.1.0"
+description = "Evidence-grounded hybrid security operations and approval-bound response"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = [
+  "fastapi>=0.120,<1", "uvicorn>=0.38,<1", "pydantic>=2.12,<3",
+  "sqlalchemy>=2.0.44,<3", "httpx>=0.28,<1", "PyYAML>=6.0.3,<7",
+  "psycopg[binary]>=3.2,<4", "prometheus-client>=0.23,<1"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pytest-cov>=7,<8", "ruff>=0.14,<1", "mypy>=1.18,<2", "types-PyYAML", "bandit>=1.8,<2", "pip-audit>=2.9,<3"]
+providers = ["boto3>=1.40,<2", "azure-identity>=1.25,<2", "azure-eventhub>=5.15,<6", "google-auth>=2.40,<3", "google-cloud-pubsub>=2.32,<3"]
+
+[project.scripts]
+secopsmesh = "secopsmesh.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = ["live: requires an explicitly configured disposable lab"]
+
+[tool.coverage.run]
+source = ["secopsmesh"]
+omit = ["*/cli.py", "*/provider_worker.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+"scripts/*" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+ignore_missing_imports = true
+

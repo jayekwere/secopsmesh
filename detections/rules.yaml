@@ -1,0 +1,32 @@
+schema_version: '1.0'
+rules:
+  - id: high-confidence-provider-alert
+    version: 1
+    name: High-severity provider evidence
+    kind: single
+    min_severity: 70
+    min_confidence: 0.4
+    categories: []
+    window_seconds: 900
+    min_events: 1
+    min_sources: 1
+  - id: hybrid-identity-pivot
+    version: 1
+    name: Related identity across security sources
+    kind: correlation
+    min_severity: 20
+    min_confidence: 0.4
+    categories: []
+    window_seconds: 900
+    min_events: 2
+    min_sources: 2
+  - id: repeated-runtime-shell
+    version: 1
+    name: Repeated suspicious container activity
+    kind: correlation
+    min_severity: 70
+    min_confidence: 0.4
+    categories: [runtime.exec, k8s.create.exec]
+    window_seconds: 300
+    min_events: 2
+    min_sources: 1

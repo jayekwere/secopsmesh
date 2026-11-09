@@ -1,0 +1,10 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: Metadata
+    verbs: [create]
+    namespaces: [secopsmesh-lab]
+    resources:
+      - group: ''
+        resources: [pods/exec]
+  - level: None

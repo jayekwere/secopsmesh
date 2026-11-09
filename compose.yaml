@@ -1,0 +1,64 @@
+name: secopsmesh
+services:
+  db:
+    image: postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac
+    env_file: .runtime/compose/db.env
+    volumes: [database:/var/lib/postgresql/data]
+    networks: [state]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U mesh -d mesh]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    pids_limit: 150
+  executor:
+    image: secopsmesh:local
+    build: .
+    command: [executor, --host, 0.0.0.0, --port, '8080']
+    env_file: .runtime/compose/executor.env
+    depends_on:
+      db: {condition: service_healthy}
+      lab: {condition: service_healthy}
+    networks: [state, response]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=64m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 384m
+    pids_limit: 100
+  api:
+    image: secopsmesh:local
+    build: .
+    env_file: .runtime/compose/api.env
+    depends_on:
+      executor: {condition: service_healthy}
+    ports: [127.0.0.1:8080:8080]
+    networks: [state, ingress]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=64m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 384m
+    pids_limit: 100
+  lab:
+    image: secopsmesh:local
+    build: .
+    command: [lab, --host, 0.0.0.0, --port, '8080']
+    env_file: .runtime/compose/lab.env
+    volumes: [lab-state:/app/.runtime]
+    networks: [response]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 192m
+    pids_limit: 75
+volumes:
+  database:
+  lab-state:
+networks:
+  ingress: {internal: true}
+  state: {internal: true}
+  response: {internal: true}

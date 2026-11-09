@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secopsmesh-lab
+  labels:
+    secopsmesh.io/purpose: disposable
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lab-workload
+  namespace: secopsmesh-lab
+  labels: {app: lab-workload, secopsmesh.io/target: lab-workload}
+spec:
+  automountServiceAccountToken: false
+  securityContext: {runAsNonRoot: true, runAsUser: 10001, seccompProfile: {type: RuntimeDefault}}
+  containers:
+    - name: victim
+      image: secopsmesh:lab
+      imagePullPolicy: Never
+      command: [python, -m, http.server, '8080', --bind, 0.0.0.0]
+      ports: [{containerPort: 8080}]
+      resources: {requests: {cpu: 20m, memory: 32Mi}, limits: {cpu: 200m, memory: 96Mi}}
+      securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: victim, namespace: secopsmesh-lab}
+spec:
+  selector: {app: lab-workload}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: packet-probe
+  namespace: secopsmesh-lab
+  labels: {app: packet-probe}
+spec:
+  automountServiceAccountToken: false
+  securityContext: {runAsNonRoot: true, runAsUser: 10001, seccompProfile: {type: RuntimeDefault}}
+  containers:
+    - name: probe
+      image: secopsmesh:lab
+      imagePullPolicy: Never
+      command: [python, /probe/probe.py]
+      env: [{name: TARGET_URL, value: 'http://victim.secopsmesh-lab.svc.cluster.local:8080/'}]
+      ports: [{containerPort: 8080}]
+      volumeMounts: [{name: script, mountPath: /probe, readOnly: true}]
+      resources: {requests: {cpu: 20m, memory: 32Mi}, limits: {cpu: 200m, memory: 96Mi}}
+      securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+  volumes: [{name: script, configMap: {name: packet-probe}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: packet-probe, namespace: secopsmesh-lab}
+spec:
+  selector: {app: packet-probe}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: mesh-responder, namespace: secopsmesh-lab}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: mesh-responder, namespace: secopsmesh-lab}
+rules:
+  - apiGroups: [cilium.io]
+    resources: [ciliumnetworkpolicies]
+    verbs: [create, get, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: mesh-responder, namespace: secopsmesh-lab}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: mesh-responder}
+subjects: [{kind: ServiceAccount, name: mesh-responder, namespace: secopsmesh-lab}]
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata: {name: secopsmesh-lab-responder-scope}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [cilium.io]
+        apiVersions: [v2]
+        operations: [CREATE, UPDATE]
+        resources: [ciliumnetworkpolicies]
+  matchConditions:
+    - name: only-mesh-responder
+      expression: request.userInfo.username == 'system:serviceaccount:secopsmesh-lab:mesh-responder'
+  validations:
+    - expression: "object.metadata.namespace == 'secopsmesh-lab' && object.spec.endpointSelector.matchLabels['secopsmesh.io/target'] == 'lab-workload' && size(object.spec.endpointSelector.matchLabels) == 1"
+      message: Responder may select only the named disposable workload.
+    - expression: "object.spec.ingressDeny[0].fromEntities == ['all'] && object.spec.egressDeny[0].toEntities == ['all'] && size(object.spec.ingressDeny) == 1 && size(object.spec.egressDeny) == 1"
+      message: Responder may install only the fixed bidirectional deny policy.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: secopsmesh-lab-responder-scope}
+spec:
+  policyName: secopsmesh-lab-responder-scope
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {secopsmesh.io/purpose: disposable}
