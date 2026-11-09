@@ -1,5 +1,25 @@
 name: secopsmesh
 services:
+  gateway:
+    image: caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
+    user: '10001:10001'
+    environment: {XDG_DATA_HOME: /tmp/data, XDG_CONFIG_HOME: /tmp/config}
+    volumes: [./deploy/Caddyfile:/etc/caddy/Caddyfile:ro]
+    ports: [127.0.0.1:8080:8080]
+    networks: [edge, ingress]
+    depends_on:
+      api: {condition: service_healthy}
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=32m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 192m
+    pids_limit: 75
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/health']
+      interval: 5s
+      timeout: 3s
+      retries: 30
   db:
     image: postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac
     env_file: .runtime/compose/db.env
@@ -34,7 +54,6 @@ services:
     env_file: .runtime/compose/api.env
     depends_on:
       executor: {condition: service_healthy}
-    ports: [127.0.0.1:8080:8080]
     networks: [state, ingress]
     read_only: true
     tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
@@ -59,6 +78,7 @@ volumes:
   database:
   lab-state:
 networks:
+  edge: {}
   ingress: {internal: true}
   state: {internal: true}
   response: {internal: true}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity,
@@ -84,6 +84,25 @@ function Empty({ text }: { text: string }) {
 }
 
 function App() {
+  const [generation, setGeneration] = useState(0);
+  return (
+    <Session
+      key={generation}
+      endSession={() => setGeneration((value) => value + 1)}
+    />
+  );
+}
+
+function Session({ endSession }: { endSession: () => void }) {
+  const lifecycle = useRef({ active: true, controller: new AbortController() });
+  useEffect(() => {
+    const owner = { active: true, controller: new AbortController() };
+    lifecycle.current = owner;
+    return () => {
+      owner.active = false;
+      owner.controller.abort();
+    };
+  }, []);
   const [token, setToken] = useState("");
   const [inputToken, setInputToken] = useState("");
   const [me, setMe] = useState<RecordData | null>(null);
@@ -114,6 +133,8 @@ function App() {
       body?: unknown,
       credential = token,
     ) => {
+      const owner = lifecycle.current;
+      if (!owner.active) throw new DOMException("Session ended", "AbortError");
       const response = await fetch("/api" + path, {
         method,
         headers: {
@@ -121,8 +142,11 @@ function App() {
           ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: owner.controller.signal,
       });
       const result = await response.json();
+      if (!owner.active || lifecycle.current !== owner)
+        throw new DOMException("Session ended", "AbortError");
       if (!response.ok)
         throw new Error(
           typeof result.detail === "string"
@@ -188,22 +212,9 @@ function App() {
     });
   }
   function logout() {
-    setToken("");
-    setMe(null);
-    setSelected(null);
-    setPacket(null);
-    setReports([]);
-    setCheckpoint(null);
-    setData({
-      overview: {},
-      sources: [],
-      events: [],
-      incidents: [],
-      actions: [],
-      rules: [],
-      audit: [],
-      targets: [],
-    });
+    lifecycle.current.active = false;
+    lifecycle.current.controller.abort();
+    endSession();
   }
   const allowed = (role: string) => me?.roles.includes(role);
   async function inspectIncident(incident: RecordData) {
@@ -484,6 +495,7 @@ function App() {
         <nav aria-label="Main navigation">
           {navigation.map(({ name, icon: Icon }) => (
             <button
+              aria-label={name}
               className={page === name ? "active" : ""}
               onClick={() => {
                 setPage(name);

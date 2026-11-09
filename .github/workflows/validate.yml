@@ -31,6 +31,7 @@ jobs:
           .venv/bin/ruff check src tests scripts
           .venv/bin/ruff format --check src tests scripts
           .venv/bin/mypy src/secopsmesh
+          npm run format:check --prefix frontend
       - name: Backend contracts, policy and adversarial tests
         run: .venv/bin/pytest --cov=secopsmesh --cov-report=json:reports/coverage.json --cov-report=xml:reports/coverage.xml --junitxml=reports/backend-junit.xml
       - name: SAST and dependency checks

@@ -209,17 +209,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             events = s.scalar(
                 select(func.count()).select_from(Event).where(Event.tenant == p.tenant)
             )
-            incidents = s.scalars(select(Incident).where(Incident.tenant == p.tenant)).all()
-            actions = s.scalars(select(Action).where(Action.tenant == p.tenant)).all()
+            incidents = s.scalar(
+                select(func.count()).select_from(Incident).where(Incident.tenant == p.tenant)
+            )
+            high_risk = s.scalar(
+                select(func.count())
+                .select_from(Incident)
+                .where(Incident.tenant == p.tenant, Incident.data["risk"].as_integer() >= 70)
+            )
+
+            def action_count(*states: str):
+                return s.scalar(
+                    select(func.count())
+                    .select_from(Action)
+                    .where(Action.tenant == p.tenant, Action.state.in_(states))
+                )
+
             return {
                 "events": events,
-                "incidents": len(incidents),
-                "high_risk": sum(i.data["risk"] >= 70 for i in incidents),
-                "pending_approvals": sum(a.state == "pending" for a in actions),
-                "verified_actions": sum(a.state == "verified" for a in actions),
-                "uncertain_actions": sum(
-                    a.state in {"ambiguous", "verification_failed"} for a in actions
-                ),
+                "incidents": incidents,
+                "high_risk": high_risk,
+                "pending_approvals": action_count("pending"),
+                "verified_actions": action_count("verified"),
+                "uncertain_actions": action_count("ambiguous", "verification_failed"),
                 "synthetic_events": s.scalar(
                     select(func.count())
                     .select_from(Event)

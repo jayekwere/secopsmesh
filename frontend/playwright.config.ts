@@ -9,15 +9,15 @@ export default defineConfig({
     ["junit", { outputFile: "../reports/browser-junit.xml" }],
   ],
   use: {
-    baseURL: "http://127.0.0.1:8080",
+    baseURL: "http://127.0.0.1:18180",
     viewport: { width: 1440, height: 1000 },
     trace: "off",
     screenshot: "only-on-failure",
   },
   webServer: {
     command: "../.venv/bin/python ../scripts/browser-server.py",
-    url: "http://127.0.0.1:8080/health",
-    reuseExistingServer: !process.env.CI,
+    url: "http://127.0.0.1:18180/health",
+    reuseExistingServer: false,
     timeout: 60000,
   },
 });

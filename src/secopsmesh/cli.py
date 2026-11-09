@@ -25,12 +25,13 @@ def initialize(
         role: secrets.token_urlsafe(32)
         for role in ["observer", "collector", "analyst", "approver", "executor"]
     }
+    tokens["other_observer"] = secrets.token_urlsafe(32)
     key = secrets.token_urlsafe(48)
     credentials = {
         token_hash(token): {
             "name": "lab-" + role,
-            "tenant": "lab",
-            "roles": [role],
+            "tenant": "lab-other" if role == "other_observer" else "lab",
+            "roles": ["observer" if role == "other_observer" else role],
             "sources": list(SOURCES) if role == "collector" else [],
             "synthetic": True,
         }

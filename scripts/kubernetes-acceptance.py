@@ -68,7 +68,12 @@ with httpx.Client(
         "not-the-approved-target"
     )
     scoped = kube.post(adapter.collection, json=wrong)
-    assert scoped.status_code == 403, "admission policy failed to restrict the response selector"
+    assert scoped.status_code in {403, 422} and "Responder may select only" in scoped.text, (
+        f"scope admission denied incorrectly: {scoped.status_code} {scoped.text}"
+    )
+    assert kube.get(adapter.collection + "/" + adapter.name).status_code == 404, (
+        "denied policy unexpectedly persisted"
+    )
     adapter.close()
 baseline = None
 for _ in range(30):

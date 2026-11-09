@@ -1,7 +1,13 @@
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
 const tokens = () =>
-  JSON.parse(fs.readFileSync("../.runtime/tokens.json", "utf8"));
+  JSON.parse(
+    fs.readFileSync(
+      JSON.parse(fs.readFileSync("../.runtime/e2e-session.json", "utf8"))
+        .token_file,
+      "utf8",
+    ),
+  );
 async function login(page: Page, role = "analyst") {
   await page
     .getByLabel("Access credential", { exact: true })
@@ -195,4 +201,118 @@ test("small-screen navigation and tables remain usable", async ({ page }) => {
     })
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
+});
+
+test("completed replay is cleared across a real tenant switch", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await login(page);
+  await page.getByRole("button", { name: "Detections", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Replay detections", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Replay evaluation", exact: true }),
+  ).toBeVisible();
+  const report = JSON.parse(await page.locator("pre").innerText());
+  const privateEvidenceId = report.detections[0].evidence_ids[0];
+  await page.getByTitle("Switch credential").click();
+  await login(page, "other_observer");
+  await expect(
+    page.getByText("lab-other workspace", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Detections", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Replay evaluation", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText(privateEvidenceId);
+});
+
+test("late refresh cannot restore prior-tenant evidence", async ({ page }) => {
+  await page.goto("/");
+  await login(page);
+  await page.getByRole("button", { name: "Findings", exact: true }).click();
+  await expect(
+    page.getByText("Synthetic suspicious credential access", { exact: true }),
+  ).toBeVisible();
+  let release!: () => void;
+  let observed!: () => void;
+  let settled!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const started = new Promise<void>((resolve) => (observed = resolve));
+  const finished = new Promise<void>((resolve) => (settled = resolve));
+  let intercepted = false;
+  await page.route("**/api/events", async (route) => {
+    if (
+      !intercepted &&
+      route.request().headers().authorization === "Bearer " + tokens().analyst
+    ) {
+      intercepted = true;
+      const response = await route.fetch();
+      observed();
+      await held;
+      try {
+        await route.fulfill({ response });
+      } catch {
+        /* sign-out intentionally aborts the old request */
+      } finally {
+        settled();
+      }
+    } else await route.continue();
+  });
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await started;
+  await page.getByTitle("Switch credential").click();
+  await login(page, "other_observer");
+  await expect(
+    page.getByText("lab-other workspace", { exact: true }),
+  ).toBeVisible();
+  release();
+  await finished;
+  await expect(
+    page.getByText("Synthetic suspicious credential access", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("late incident inspection cannot cross a credential boundary", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await login(page);
+  let release!: () => void;
+  let observed!: () => void;
+  let settled!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const started = new Promise<void>((resolve) => (observed = resolve));
+  const finished = new Promise<void>((resolve) => (settled = resolve));
+  await page.route(/\/api\/incidents\/[a-f0-9]{64}$/, async (route) => {
+    const response = await route.fetch();
+    observed();
+    await held;
+    try {
+      await route.fulfill({ response });
+    } catch {
+      /* aborted old-session request */
+    } finally {
+      settled();
+    }
+  });
+  await page.getByRole("button", { name: "Incidents", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: /Related security activity: lab:hybrid-identity/,
+    })
+    .click();
+  await started;
+  await page.getByTitle("Switch credential").click();
+  await login(page, "other_observer");
+  await expect(
+    page.getByText("lab-other workspace", { exact: true }),
+  ).toBeVisible();
+  release();
+  await finished;
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("lab:hybrid-identity");
 });
