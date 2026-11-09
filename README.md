@@ -57,7 +57,7 @@ docker compose up --build -d --wait
 
 CI runs lint/format/type checks, coverage-gated tests, dependency/SAST/secret scans, image/IaC scans, real HTTP demos, PostgreSQL tests, browser workflows, container acceptance and an independent Cilium lab. Third-party Actions use immutable commit references. Failure or absent acceptance evidence is not a pass.
 
-Local release-candidate validation: **140 backend tests, 90.78% backend statement coverage, eight browser workflows**. The [validated release](https://github.com/jayekwere/secopsmesh/releases) attaches exact-commit CI measurements, provider-contract results, Docker/PostgreSQL and Kubernetes evidence, an SBOM, checksums and build-provenance attestations. Cloud contracts remain distinct from live cloud acceptance. See [validation scope and exclusions](docs/VALIDATION.md).
+Local release-candidate validation: **140 backend tests, 90.73% backend statement coverage, eight browser workflows**. The [validated release](https://github.com/jayekwere/secopsmesh/releases) attaches exact-commit CI measurements, provider-contract results, Docker/PostgreSQL and Kubernetes evidence, an SBOM, checksums and build-provenance attestations. Cloud contracts remain distinct from live cloud acceptance. See [validation scope and exclusions](docs/VALIDATION.md).
 
 ## Documentation
 

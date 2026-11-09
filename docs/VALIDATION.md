@@ -24,7 +24,7 @@ npm run build --prefix frontend
 npm run test:e2e --prefix frontend
 ```
 
-Coverage threshold is 85% of backend application statements. CLI entry points and provider-worker orchestration are excluded from that statement denominator and are exercised separately through executable demos/transport contracts; this distinction is deliberate and visible in `pyproject.toml`. The suite is not a claim of 85% coverage of every shipped line. The final local measurement is 140 passing backend tests and 90.78% coverage; the exact release's CI measurements in `validation-index.json` supersede local measurements if they differ. Eight browser tests include full response/rollback and three same-tab tenant-session regressions.
+Coverage threshold is 85% of backend application statements. CLI entry points and provider-worker orchestration are excluded from that statement denominator and are exercised separately through executable demos/transport contracts; this distinction is deliberate and visible in `pyproject.toml`. The suite is not a claim of 85% coverage of every shipped line. The final local measurement is 140 passing backend tests and 90.73% coverage; the exact release's CI measurements in `validation-index.json` supersede local measurements if they differ. Eight browser tests include full response/rollback and three same-tab tenant-session regressions.
 
 The PostgreSQL test reset requires an explicitly disposable loopback `mesh_test` database, user `mesh_test`, and `SECMESH_ALLOW_TEST_DB_RESET=disposable-ci-only`. It refuses arbitrary environment database URLs. Never point destructive test cleanup at operational data.
 

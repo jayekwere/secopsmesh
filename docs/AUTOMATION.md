@@ -14,3 +14,5 @@ Concurrent requests cannot both claim the same action. Replaying a completed exe
 Per-operation transport retries are bounded. Privileged mutations have no blind automatic retry. An unresolved response may need a new explicitly reviewed plan after an operator establishes the actual target state. Audit history retains up to 20 readback outcomes per action while the append-only operational audit retains every attempt.
 
 The local target is a real isolated application traffic gate: unauthenticated `/work` returns 200 before containment, 403 with matching action ownership after containment, and 200 after authorized rollback. It is **not host-wide network isolation**. Kubernetes response is a Cilium explicit deny policy; absence of a policy or an unreachable service alone is not sufficient verification. Cloud destructive/remediation actions are not implemented or silently enabled.
+
+[Future scoped cloud response contracts](CLOUD-RESPONSE-DESIGN.md) define the narrow AWS, Azure and GCP extension boundary and required conditional rollback. They are explicitly design-only and cannot execute through this release.
