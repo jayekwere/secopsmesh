@@ -36,7 +36,7 @@ jobs:
       - name: SAST and dependency checks
         run: |
           .venv/bin/bandit -r src -q -f json -o reports/bandit.json
-          .venv/bin/pip-audit --skip-editable --strict --format json --output reports/dependency-audit.json
+          .venv/bin/pip-audit --strict --disable-pip --no-deps -r requirements.lock --format json --output reports/dependency-audit.json
           npm audit --prefix frontend --audit-level=low --json > reports/npm-audit.json
       - name: Build actual dashboard
         run: npm run build --prefix frontend

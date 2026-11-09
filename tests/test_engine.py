@@ -178,8 +178,92 @@ def test_bounded_requests(client):
 
 def test_unsupported_source_and_collector_scope(client, settings):
     assert client.post("/api/ingest/unknown", json={}, headers=auth("collector")).status_code == 403
-    settings.credentials["scoped"] = None  # no scope bypass via malformed payload
+    from secopsmesh.config import Principal, token_hash
+
+    settings.credentials[token_hash("limited")] = Principal(
+        "limited", "lab", frozenset({"collector"}), frozenset({"aws.guardduty"})
+    )
+    assert (
+        client.post(
+            "/api/ingest/wazuh", json=fixtures()["wazuh"], headers=auth("limited")
+        ).status_code
+        == 403
+    )
     assert client.post("/api/ingest/wazuh", json={}, headers=auth()).status_code == 403
+
+
+def test_same_pod_name_in_different_namespaces_does_not_correlate(client, settings):
+    settings.aliases = {}
+    first = fixtures()["kubernetes.audit"]
+    second = copy.deepcopy(first)
+    second["auditID"] = "different-namespace-event"
+    second["objectRef"]["namespace"] = "different-lab"
+    for event in [first, second]:
+        assert (
+            client.post(
+                "/api/ingest/kubernetes.audit", json=event, headers=auth("collector")
+            ).status_code
+            == 200
+        )
+    assert len(client.get("/api/incidents", headers=auth()).json()) == 2
+
+
+def test_cross_source_origin_dedup_keeps_provenance_without_false_corroboration(client):
+    records = fixtures()
+    origin = "arn:aws:guardduty:us-west-2:000000000000:detector/lab/finding/same-origin"
+    records["aws.guardduty"]["arn"] = origin
+    records["aws.securityhub"]["Id"] = origin
+    for source in ["aws.guardduty", "aws.securityhub"]:
+        assert (
+            client.post(
+                "/api/ingest/" + source, json=records[source], headers=auth("collector")
+            ).status_code
+            == 200
+        )
+    groups = client.get("/api/findings", headers=auth()).json()["groups"]
+    assert len(groups) == 1 and len(groups[0]["evidence_ids"]) == 2
+    assert groups[0]["sources"] == ["aws.guardduty", "aws.securityhub"]
+    report = client.post("/api/replay", headers=auth()).json()
+    assert "hybrid-identity-pivot" not in {r["rule_id"] for r in report["detections"]}
+
+
+@pytest.mark.parametrize("bad", [None, "invalid", {}, float("inf")])
+def test_invalid_severity_fails_validation(client, bad):
+    payload = fixtures()["aws.guardduty"]
+    payload["severity"] = bad
+    # JSON Infinity is deliberately sent as bytes to exercise the parser boundary.
+    response = client.post(
+        "/api/ingest/aws.guardduty",
+        content=canonical(payload),
+        headers={**auth("collector"), "Content-Type": "application/json"},
+    )
+    assert response.status_code == 422
+
+
+def test_gcp_resource_enrichment_is_retained():
+    payload = fixtures()["gcp.scc"]
+    payload["resource"] = {
+        "project": "projects/synthetic-lab",
+        "name": payload["finding"]["resourceName"],
+    }
+    finding = parse("gcp.scc", payload)[0]
+    assert finding.environment == "projects/synthetic-lab"
+    assert finding.evidence["_resource"]["project"] == "projects/synthetic-lab"
+
+
+def test_sysmon_supported_wazuh_collection_contract():
+    payload = fixtures()["wazuh"]
+    payload["data"] = {
+        "win": {
+            "system": {"providerName": "Microsoft-Windows-Sysmon", "eventID": "1"},
+            "eventdata": {
+                "user": "synthetic\\lab-user",
+                "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            },
+        }
+    }
+    finding = parse("wazuh", payload, True)[0]
+    assert finding.identity == "synthetic\\lab-user" and finding.synthetic
 
 
 def test_benign_replay_regression(client):

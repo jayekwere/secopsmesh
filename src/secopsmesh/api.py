@@ -284,6 +284,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 raise HTTPException(404, "evidence not found")
             return event_view(row)
 
+    @app.get("/api/findings")
+    def findings(p: Principal = Depends(reader)):
+        with db.session() as s:
+            rows = s.scalars(
+                select(Event)
+                .where(Event.tenant == p.tenant)
+                .order_by(Event.observed.desc())
+                .limit(1000)
+            ).all()
+            groups: dict[str, dict] = {}
+            for row in rows:
+                group = groups.setdefault(
+                    row.fingerprint,
+                    {
+                        "finding_key": row.fingerprint,
+                        "title": row.data["title"],
+                        "evidence_ids": [],
+                        "sources": [],
+                        "risk": row.data["risk"],
+                    },
+                )
+                group["evidence_ids"].append(row.id)
+                group["sources"] = sorted(set(group["sources"] + [row.source]))
+                group["risk"] = max(group["risk"], row.data["risk"])
+            return {
+                "groups": list(groups.values()),
+                "events_evaluated": len(rows),
+                "bounded_at": 1000,
+            }
+
     @app.get("/api/incidents")
     def incidents(p: Principal = Depends(reader)):
         with db.session() as s:
@@ -481,7 +511,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if credential_digest is None or token_hash(credential) != credential_digest:
             raise Denied("executor credential binding failed")
         try:
-            with httpx.Client(timeout=120, follow_redirects=False, trust_env=False) as transport:
+            with httpx.Client(
+                timeout=120,
+                follow_redirects=False,
+                trust_env=False,
+                verify=settings.executor_ca_file,
+            ) as transport:
                 result = transport.post(
                     settings.executor_url.rstrip("/") + path,
                     headers={"Authorization": "Bearer " + credential},

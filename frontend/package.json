@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format:check": "prettier --check src e2e playwright.config.ts vite.config.ts tsconfig.json package.json"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

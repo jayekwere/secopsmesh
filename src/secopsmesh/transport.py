@@ -151,11 +151,16 @@ class WazuhIndexer:
         }
         if checkpoint:
             body["search_after"] = checkpoint
-        response = self.client.post(self.origin + "/wazuh-alerts-4.x-*/_search", json=body)
-        response.raise_for_status()
-        if len(response.content) > 1048576:
-            raise AdapterError("indexer response exceeds 1 MiB")
-        result = response.json()
+        with self.client.stream(
+            "POST", self.origin + "/wazuh-alerts-4.x-*/_search", json=body
+        ) as response:
+            response.raise_for_status()
+            content = b""
+            for chunk in response.iter_bytes():
+                content += chunk
+                if len(content) > 1048576:
+                    raise AdapterError("indexer response exceeds 1 MiB")
+        result = json.loads(content)
         rows = result.get("hits", {}).get("hits", [])
         if len(rows) > 100:
             raise AdapterError("indexer page exceeds limit")

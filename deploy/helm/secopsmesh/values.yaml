@@ -1,0 +1,15 @@
+image:
+  repository: secopsmesh
+  digest: ''
+apiSecretName: secopsmesh-api
+executorSecretName: secopsmesh-executor
+internalTlsSecretName: secopsmesh-internal-tls
+responseCredentialsSecretName: ''
+databaseCidr: ''
+databasePort: 5432
+ingressNamespace: ingress-nginx
+kubernetesApiCidr: ''
+replicas: 1
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: '1', memory: 512Mi}

@@ -30,10 +30,10 @@ audit_events = [
 event = next(
     e
     for e in reversed(audit_events)
-    if e.get("verb") == "create"
+    if e.get("verb") in {"create", "get"}
     and e.get("objectRef", {}).get("subresource") == "exec"
     and e["objectRef"].get("namespace") == "secopsmesh-lab"
-    and e.get("stage") == "ResponseComplete"
+    and e.get("stage") in {"ResponseStarted", "ResponseComplete"}
 )
 target = {
     "kind": "kubernetes",

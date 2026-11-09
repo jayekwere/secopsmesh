@@ -25,6 +25,7 @@ nodes:
           extraArgs:
             audit-log-path: /var/log/kubernetes/audit.log
             audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
+            audit-log-mode: blocking
           extraVolumes:
             - name: audit-policy
               hostPath: /etc/kubernetes/policies
@@ -62,6 +63,7 @@ probe_pid=$!
 kubectl -n secopsmesh-lab exec lab-workload -- /bin/sh -c 'printf synthetic-lab-activity'
 sleep 2
 docker cp secopsmesh-lab-control-plane:/var/log/kubernetes/audit.log .runtime/kube-audit.jsonl
+cp .runtime/kube-audit.jsonl reports/kubernetes-audit.jsonl
 kubectl -n secopsmesh-lab create token mesh-responder --duration=15m > .runtime/kube-token
 chmod 600 .runtime/kube-token
 kubectl config view --raw --minify -o json > .runtime/kube-connection.json

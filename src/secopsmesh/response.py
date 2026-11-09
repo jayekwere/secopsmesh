@@ -78,6 +78,8 @@ class KubernetesResponse:
 
     def __init__(self, target: dict, client: httpx.Client | None = None):
         self.target = target
+        if target.get("ca_file") is False:
+            raise ResponseError("Kubernetes TLS verification cannot be disabled")
         if not re.fullmatch(r"secopsmesh-lab(?:-[a-z0-9-]+)?", target["namespace"]):
             raise ResponseError("namespace is not a disposable lab")
         if not re.fullmatch(
@@ -92,8 +94,27 @@ class KubernetesResponse:
             headers={"Authorization": "Bearer " + Path(target["token_file"]).read_text().strip()},
         )
         origin = urlparse(target["url"])
-        if origin.scheme != "https" or origin.username or origin.query or origin.fragment:
+        if (
+            origin.scheme != "https"
+            or origin.username
+            or origin.query
+            or origin.fragment
+            or origin.path not in {"", "/"}
+        ):
             raise ResponseError("Kubernetes requires a configured HTTPS origin")
+        if target.get("probe_url"):
+            probe_origin = urlparse(target["probe_url"])
+            if (
+                probe_origin.username
+                or probe_origin.fragment
+                or probe_origin.scheme not in {"http", "https"}
+            ):
+                raise ResponseError("invalid probe origin")
+            if probe_origin.scheme == "http" and probe_origin.hostname not in {
+                "127.0.0.1",
+                "localhost",
+            }:
+                raise ResponseError("plaintext probe requires a loopback lab endpoint")
         self.name = "mesh-" + digest(target["label"])[:20]
         self.collection = (
             target["url"].rstrip("/")

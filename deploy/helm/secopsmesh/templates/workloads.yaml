@@ -1,0 +1,81 @@
+{{- $root := . -}}
+{{- range $component := list "api" "executor" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $root.Release.Name }}-{{ $component }}
+spec:
+  replicas: {{ $root.Values.replicas }}
+  selector:
+    matchLabels: {app.kubernetes.io/instance: {{ $root.Release.Name }}, app.kubernetes.io/component: {{ $component }}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/instance: {{ $root.Release.Name }}, app.kubernetes.io/component: {{ $component }}}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: {{ $component }}
+          image: "{{ $root.Values.image.repository }}@{{ required "provide an immutable image.digest" $root.Values.image.digest }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - {{ if eq $component "api" }}serve{{ else }}executor{{ end }}
+            - --host
+            - 0.0.0.0
+            - --port
+            - '8080'
+            {{- if eq $component "executor" }}
+            - --ssl-certfile
+            - /var/run/mesh-tls/tls.crt
+            - --ssl-keyfile
+            - /var/run/mesh-tls/tls.key
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ if eq $component "api" }}{{ $root.Values.apiSecretName }}{{ else }}{{ $root.Values.executorSecretName }}{{ end }}
+          env:
+            - name: SECMESH_SERVICE_MODE
+              value: {{ $component | quote }}
+            {{- if eq $component "api" }}
+            - name: SECMESH_EXECUTOR_URL
+              value: "https://{{ $root.Release.Name }}-executor.{{ $root.Release.Namespace }}.svc:8080"
+            - name: SECMESH_EXECUTOR_CA_FILE
+              value: /var/run/mesh-tls/ca.crt
+            {{- end }}
+          ports: [{name: http, containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /health, port: http, scheme: {{ if eq $component "executor" }}HTTPS{{ else }}HTTP{{ end }}}, initialDelaySeconds: 5, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /health, port: http, scheme: {{ if eq $component "executor" }}HTTPS{{ else }}HTTP{{ end }}}, initialDelaySeconds: 15, periodSeconds: 20}
+          resources: {{ toYaml $root.Values.resources | nindent 12 }}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+            - {name: tls, mountPath: /var/run/mesh-tls, readOnly: true}
+            {{- if and (eq $component "executor") $root.Values.responseCredentialsSecretName }}
+            - {name: response, mountPath: /var/run/mesh-response, readOnly: true}
+            {{- end }}
+      volumes:
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 64Mi}}
+        - name: tls
+          secret:
+            secretName: {{ $root.Values.internalTlsSecretName }}
+            defaultMode: 0440
+            items:
+              {{- if eq $component "executor" }}
+              - {key: tls.crt, path: tls.crt}
+              - {key: tls.key, path: tls.key}
+              {{- else }}
+              - {key: ca.crt, path: ca.crt}
+              {{- end }}
+        {{- if and (eq $component "executor") $root.Values.responseCredentialsSecretName }}
+        - name: response
+          secret: {secretName: {{ $root.Values.responseCredentialsSecretName }}, defaultMode: 0440}
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: {{ $root.Release.Name }}-{{ $component }}}
+spec:
+  selector: {app.kubernetes.io/instance: {{ $root.Release.Name }}, app.kubernetes.io/component: {{ $component }}}
+  ports: [{name: http, port: 8080, targetPort: http}]
+{{- end }}

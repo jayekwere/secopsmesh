@@ -109,6 +109,8 @@ def main() -> None:
         )
         p.add_argument("--port", type=int, default=port)
         p.add_argument("--host", default="127.0.0.1")
+        p.add_argument("--ssl-certfile")
+        p.add_argument("--ssl-keyfile")
     seed = sub.add_parser("seed")
     seed.add_argument("--api", default="http://127.0.0.1:8080")
     seed.add_argument("--tokens", type=Path, default=Path(".runtime/tokens.json"))
@@ -129,7 +131,14 @@ def main() -> None:
             from .lab_service import create_lab
 
             app = create_lab()
-        uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+        uvicorn.run(
+            app,
+            host=args.host,
+            port=args.port,
+            log_level="warning",
+            ssl_certfile=args.ssl_certfile,
+            ssl_keyfile=args.ssl_keyfile,
+        )
     elif args.command == "seed":
         tokens = json.loads(args.tokens.read_text())
         with httpx.Client(base_url=args.api, timeout=30, trust_env=False) as client:

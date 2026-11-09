@@ -23,7 +23,7 @@ services:
       lab: {condition: service_healthy}
     networks: [state, response]
     read_only: true
-    tmpfs: [/tmp:rw,noexec,nosuid,size=64m]
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     mem_limit: 384m
@@ -37,7 +37,7 @@ services:
     ports: [127.0.0.1:8080:8080]
     networks: [state, ingress]
     read_only: true
-    tmpfs: [/tmp:rw,noexec,nosuid,size=64m]
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     mem_limit: 384m
@@ -50,7 +50,7 @@ services:
     volumes: [lab-state:/app/.runtime]
     networks: [response]
     read_only: true
-    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=32m']
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     mem_limit: 192m

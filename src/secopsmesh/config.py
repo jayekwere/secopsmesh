@@ -35,6 +35,7 @@ class Settings:
     auto_propose: bool = False
     service_mode: str = "api"
     executor_url: str = ""
+    executor_ca_file: str | bool = True
 
     def __post_init__(self) -> None:
         if len(self.signing_key) < 32:
@@ -78,6 +79,7 @@ class Settings:
             auto_propose=os.environ.get("SECMESH_AUTO_PROPOSE") == "true",
             service_mode=os.environ.get("SECMESH_SERVICE_MODE", "api"),
             executor_url=os.environ.get("SECMESH_EXECUTOR_URL", ""),
+            executor_ca_file=os.environ.get("SECMESH_EXECUTOR_CA_FILE", True),
         )
 
 

@@ -60,7 +60,11 @@ def records(source: str, payload: dict) -> list[dict]:
     elif source.startswith("azure."):
         batch = payload.get("value", payload.get("records", [payload]))
     elif source == "gcp.scc":
-        batch = [payload.get("finding", payload)]
+        batch = (
+            [{**payload["finding"], "_resource": payload.get("resource", {})}]
+            if "finding" in payload
+            else [payload]
+        )
     elif source == "wazuh" and "hits" in payload:
         batch = [hit["_source"] for hit in payload["hits"]["hits"]]
     elif source == "kubernetes.audit":
@@ -167,7 +171,8 @@ def normalize(source: str, r: dict, synthetic: bool) -> Finding:
         environment = "azure:" + r.get("subscriptionId", "unknown")
     elif source == "gcp.scc":
         title = r.get("category", "")
-        category, asset = title, r.get("resourceName", "")
+        category, asset = title, r.get("resourceName", get(r, "_resource.name"))
+        environment = get(r, "_resource.project", "gcp")
         observed = r.get("eventTime", r.get("createTime", ""))
         score = severity(r.get("severity", "MEDIUM"))
         identity = get(r, "sourceProperties.principalEmail")
@@ -201,8 +206,8 @@ def normalize(source: str, r: dict, synthetic: bool) -> Finding:
         namespace = get(r, "objectRef.namespace")
         asset = get(r, "objectRef.uid") or get(r, "objectRef.name")
         identity = get(r, "user.username")
-        score = 85 if category in {"k8s.create.exec", "k8s.get.secrets"} else 25
-        if category == "k8s.create.exec":
+        score = 85 if category in {"k8s.create.exec", "k8s.get.exec", "k8s.get.secrets"} else 25
+        if category in {"k8s.create.exec", "k8s.get.exec"}:
             techniques = ["T1609"]
     elif source == "kubernetes.tetragon":
         process = get(r, "process_exec.process", {}) or get(r, "process_kprobe.process", {})
@@ -265,5 +270,5 @@ def normalize(source: str, r: dict, synthetic: bool) -> Finding:
 def parse(source: str, payload: dict, synthetic: bool = False) -> list[Finding]:
     try:
         return [normalize(source, row, synthetic) for row in records(source, payload)]
-    except (KeyError, TypeError, AttributeError, IndexError, OverflowError) as exc:
+    except (KeyError, TypeError, AttributeError, IndexError, OverflowError, ValueError) as exc:
         raise AdapterError("provider record does not match the supported contract") from exc
