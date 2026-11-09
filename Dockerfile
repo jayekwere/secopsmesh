@@ -21,7 +21,7 @@ ENV PATH="/opt/venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY --from=python-build /opt/venv /opt/venv
 # Remove the unused system installer, which is not on the runtime PATH.
-RUN rm -rf /usr/local/lib/python3.12/site-packages/pip* /usr/local/bin/pip* && groupadd -g 10001 mesh && useradd -u 10001 -g mesh -M -s /usr/sbin/nologin mesh && mkdir .runtime && chown 10001:10001 .runtime
+RUN apt-get update && apt-get install --no-install-recommends --only-upgrade -y zlib1g=1:1.3.dfsg+really1.3.1-1+deb13u1 && rm -rf /var/lib/apt/lists/* /usr/local/lib/python3.12/site-packages/pip* /usr/local/lib/python3.12/site-packages/setuptools* /usr/local/lib/python3.12/site-packages/pkg_resources /usr/local/bin/pip* /opt/venv/lib/python3.12/site-packages/pip* /opt/venv/lib/python3.12/site-packages/setuptools* /opt/venv/lib/python3.12/site-packages/pkg_resources /opt/venv/bin/pip* && groupadd -g 10001 mesh && useradd -u 10001 -g mesh -M -s /usr/sbin/nologin mesh && mkdir .runtime && chown 10001:10001 .runtime
 COPY detections/ ./detections/
 COPY --from=console /build/dist/ ./frontend/dist/
 USER 10001:10001

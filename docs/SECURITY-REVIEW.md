@@ -2,7 +2,7 @@
 
 The final independent source review audited commit `6a6ed79f255d165c5d75f9084f0ad2e0d8833cb2`, before remediation. A general baseline auditor, focused browser-session reviewer and parent source validation found **one medium and one low issue; no critical/high issue was established**. This is a source-backed review, not certification or a live provider penetration test.
 
-The immutable generated [pre-fix report](../evidence/security-review-6a6ed79.md) preserves the original findings and limitations. It intentionally describes the old source. The release incorporates the following fixes and executable regressions:
+The immutable generated [pre-fix report](../evidence/security-review-6a6ed79.md) preserves the original findings and limitations. It intentionally describes the old source. Commit `341b46c` fixes both findings; subsequent release hardening strengthens verification and build hygiene. The release incorporates the following fixes and executable regressions:
 
 | Finding | Fix | Verification |
 |---|---|---|
@@ -12,5 +12,7 @@ The immutable generated [pre-fix report](../evidence/security-review-6a6ed79.md)
 The backend role/tenant/approval controls were effective in the inspected paths; the browser defect did not establish server-side cross-tenant response authority. The availability issue required authenticated/preexisting tenant state and was calibrated low; no fabricated exhaustion threshold is claimed.
 
 Earlier architecture review also led to environment/namespace/collector scoping, upstream-reference corroboration deduplication, removal of unnecessary privileged token placement in the API container, streaming Wazuh response limits, and a guarded disposable test database. The outdated isolated package installer was upgraded after advisory scanning.
+
+The final verification pass requires durable positive Kubernetes preflight evidence and a healthy separate control endpoint. DNS failures, refused connections, missing baselines and failed controls cannot pass containment verification. The Claude request has a cancellable 15-second total deadline. Container scanning covers application, gateway and database images; the application runtime removes unused installer packages and updates the pinned vulnerable system library. Publication checks the actual scan reports rather than relying on workflow names alone.
 
 Residual production risks remain explicit: trusted API/executor database/signing authority, operator identity lifecycle, ingress-wide bounds, external audit checkpoints, source redaction limits, provider live onboarding, and trusted network-probe interpretation. See [security configuration](SECURITY-CONFIGURATION.md) and [validation](VALIDATION.md). The source review and release test reports are separate evidence classes.

@@ -1,6 +1,6 @@
 # SecOpsMesh threat model
 
-Design baseline established before application implementation. This document is revised against the final source during release review.
+Design baseline established before application implementation and reconciled with the release source. The immutable independent pre-fix review and its remediations are linked in [security review](SECURITY-REVIEW.md).
 
 ## Overview
 
@@ -24,19 +24,21 @@ flowchart LR
 
 ## Trust boundaries and assumptions
 
-| Boundary | Asset / invariant | Enforcement planned |
+| Boundary | Asset / invariant | Implemented enforcement |
 |---|---|---|
 | Internet or collector to ingestion | Availability, evidence provenance | Size/depth/count bounds, bearer identity scoped to tenant and source; signed webhook nonce and timestamp |
-| Browser to API | Tenant confidentiality and human authority | Hash-only API credentials, role checks, no caller-chosen tenant, no browser credential persistence, same-origin UI |
+| Browser to API | Tenant confidentiality and human authority | Hash-only API credentials, role checks, no caller-chosen tenant, memory-only credentials, same-origin UI; logout aborts outstanding calls and remounts all session state |
 | Evidence to detection | Finding and correlation integrity | Versioned validated schema, allowlisted predicates, operator-owned identity aliases; no executable rule expressions |
 | Evidence to AI | Secrets and authorization | Minimal read-only evidence tools, schema/citation validation, no privileged tool, fixed provider URL, hard request/output budgets |
 | Analyst to approval | Response authority | Exact plan digest including incident, tenant, target, action, expiry and policy version; independent principal |
 | Approval to executor | Single execution and bounded privilege | Signed approval, atomic database transition, no arbitrary shell, conservative ambiguous-state recovery |
 | Executor to target | Scope and effect | Separate credentials, fixed target inventory, typed actions, no cloud remediation enabled by default |
-| Target to verification | Honest outcomes | Independent HTTP probe or policy readback plus disposable-lab packet test; failed verification is never success |
+| Target to verification | Honest outcomes | Independent HTTP gate readback; Kubernetes requires durable positive baseline, exact policy ownership, typed packet-probe result and healthy control; failed verification is never success |
 | Database to audit consumer | Audit integrity | HMAC hash chain, signed checkpoint export; external checkpoint retention is an operator obligation |
 
 Operators control deployment configuration, credentials, rule files, the database and approved inventory. Host/root compromise is outside application isolation. TLS is mandatory beyond loopback; Compose's internal networks are a local lab boundary, not encryption. No live cloud accounts, production hosts or credentials are assumed. Linux/Windows telemetry arrives through Wazuh's supported agent/manager collection paths; SecOpsMesh is not an endpoint agent.
+
+API authorization and execution are separate processes and network memberships, but share trusted database/signing authority. The design does not withstand a fully compromised authorizer, database administrator or trusted probe. The gateway is the only published Compose endpoint. Source ingestion, deterministic policy and AI advice cannot grant new inventory scope.
 
 ## Attacker stories and mitigations
 

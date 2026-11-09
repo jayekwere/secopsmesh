@@ -57,8 +57,10 @@ docker compose up --build -d --wait
 
 CI runs lint/format/type checks, coverage-gated tests, dependency/SAST/secret scans, image/IaC scans, real HTTP demos, PostgreSQL tests, browser workflows, container acceptance and an independent Cilium lab. Third-party Actions use immutable commit references. Failure or absent acceptance evidence is not a pass.
 
+Local release-candidate validation: **140 backend tests, 90.78% backend statement coverage, eight browser workflows**. The [validated release](https://github.com/jayekwere/secopsmesh/releases) attaches exact-commit CI measurements, provider-contract results, Docker/PostgreSQL and Kubernetes evidence, an SBOM, checksums and build-provenance attestations. Cloud contracts remain distinct from live cloud acceptance. See [validation scope and exclusions](docs/VALIDATION.md).
+
 ## Documentation
 
-[Architecture and decisions](docs/DESIGN-DECISIONS.md) · [Threat model](docs/THREAT-MODEL.md) · [Connector guide](docs/CONNECTORS.md) · [Deployment](docs/DEPLOYMENT.md) · [Security configuration](docs/SECURITY-CONFIGURATION.md) · [Detection authoring](docs/DETECTIONS.md) · [Automation](docs/AUTOMATION.md) · [API](docs/API.md) · [Demonstrations](docs/DEMOS.md) · [Validation and limitations](docs/VALIDATION.md)
+[Architecture](docs/ARCHITECTURE.md) · [Design decisions](docs/DESIGN-DECISIONS.md) · [Threat model](docs/THREAT-MODEL.md) · [Connector guide](docs/CONNECTORS.md) · [Deployment](docs/DEPLOYMENT.md) · [Security configuration](docs/SECURITY-CONFIGURATION.md) · [Detection authoring](docs/DETECTIONS.md) · [Automation](docs/AUTOMATION.md) · [API](docs/API.md) · [Demonstrations](docs/DEMOS.md) · [Security review and fixes](docs/SECURITY-REVIEW.md) · [Validation and limitations](docs/VALIDATION.md)
 
 See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), [release notes](CHANGELOG.md), and the [Apache-2.0 license](LICENSE).

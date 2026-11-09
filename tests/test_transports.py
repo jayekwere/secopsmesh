@@ -221,7 +221,16 @@ def test_kubernetes_cilium_contract_and_independent_probe():
     def handler(request):
         calls.append(request.method)
         if request.url.path == "/probe":
-            return httpx.Response(200, json={"reachable": not bool(state)})
+            return httpx.Response(
+                200,
+                json={
+                    "schema_version": "1.0",
+                    "target": "lab-workload",
+                    "reachable": not bool(state),
+                    "control_reachable": True,
+                    "reason": "timeout" if state else "http_200",
+                },
+            )
         if request.method == "POST":
             state.update(json.loads(request.content))
             state["metadata"].update({"uid": "synthetic-uid", "resourceVersion": "1"})
@@ -243,9 +252,11 @@ def test_kubernetes_cilium_contract_and_independent_probe():
     adapter = KubernetesResponse(target, httpx.Client(transport=httpx.MockTransport(handler)))
     plan = {"id": "a" * 32, "action": "contain", "original_action_id": None}
     assert not adapter.verify(plan)["verified"]
+    adapter.preflight(plan)
     adapter.apply(plan)
     assert adapter.verify(plan)["verified"]
     rollback = {"id": "b" * 32, "action": "rollback", "original_action_id": plan["id"]}
+    adapter.preflight(rollback)
     adapter.apply(rollback)
     assert adapter.verify(rollback)["verified"]
     assert calls.count("POST") == 1 and calls.count("DELETE") == 1

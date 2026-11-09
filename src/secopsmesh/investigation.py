@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 import uuid
 
@@ -19,6 +20,30 @@ SYSTEM = (
     "JSON with summary, evidence_ids, next_steps, recommendations. Cite only supplied evidence IDs. "
     "Recommendations are advice for independent human review. Never claim remediation occurred."
 )
+
+
+async def claude_request(
+    key: str, payload: dict, client: httpx.AsyncClient | None = None, deadline: float = 15
+) -> bytes:
+    transport = client or httpx.AsyncClient(timeout=15, follow_redirects=False, trust_env=False)
+    try:
+        async with asyncio.timeout(deadline):
+            async with transport.stream(
+                "POST",
+                "https://api.anthropic.com/v1/messages",
+                headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
+                json=payload,
+            ) as response:
+                response.raise_for_status()
+                body = b""
+                async for chunk in response.aiter_bytes():
+                    body += chunk
+                    if len(body) > 32768:
+                        raise ValueError("AI response exceeds output budget")
+                return body
+    finally:
+        if client is None:
+            await transport.aclose()
 
 
 def can_read(p: Principal) -> None:
@@ -139,27 +164,33 @@ class Investigator:
                         "reserved_usd": reservation,
                     },
                 )
-            owned_client = client is None
-            transport = client or httpx.Client(timeout=15, follow_redirects=False, trust_env=False)
+            payload = {
+                "model": self.settings.ai_model,
+                "max_tokens": 1024,
+                "temperature": 0,
+                "system": SYSTEM,
+                "messages": [{"role": "user", "content": prompt}],
+            }
             try:
-                with transport.stream(
-                    "POST",
-                    "https://api.anthropic.com/v1/messages",
-                    headers={"x-api-key": self.settings.ai_key, "anthropic-version": "2023-06-01"},
-                    json={
-                        "model": self.settings.ai_model,
-                        "max_tokens": 1024,
-                        "temperature": 0,
-                        "system": SYSTEM,
-                        "messages": [{"role": "user", "content": prompt}],
-                    },
-                ) as response:
-                    response.raise_for_status()
-                    body = b""
-                    for chunk in response.iter_bytes():
-                        body += chunk
-                        if len(body) > 32768:
-                            raise ValueError("AI response exceeds output budget")
+                if client is None:
+                    body = asyncio.run(claude_request(self.settings.ai_key, payload))
+                else:
+                    # Synchronous client injection is a test seam, never the application's external transport.
+                    with client.stream(
+                        "POST",
+                        "https://api.anthropic.com/v1/messages",
+                        headers={
+                            "x-api-key": self.settings.ai_key,
+                            "anthropic-version": "2023-06-01",
+                        },
+                        json=payload,
+                    ) as response:
+                        response.raise_for_status()
+                        body = b""
+                        for chunk in response.iter_bytes():
+                            body += chunk
+                            if len(body) > 32768:
+                                raise ValueError("AI response exceeds output budget")
                 import json
 
                 result = json.loads(body)
@@ -194,9 +225,6 @@ class Investigator:
                 raise ValueError(
                     "AI investigation failed validation or transport; no action was authorized"
                 ) from None
-            finally:
-                if owned_client:
-                    transport.close()
         iid = uuid.uuid4().hex
         with self.db.session() as s:
             self.db.lock(s, p.tenant)

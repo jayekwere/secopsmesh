@@ -56,7 +56,7 @@ docker build -t secopsmesh:lab .
 kubectl create namespace secopsmesh-lab
 kubectl -n secopsmesh-lab create configmap packet-probe --from-file=probe.py=lab/probe.py
 kubectl apply -f lab/workloads.yaml
-kubectl -n secopsmesh-lab wait --for=condition=Ready pod/lab-workload pod/packet-probe --timeout=180s
+kubectl -n secopsmesh-lab wait --for=condition=Ready pod/lab-workload pod/packet-probe pod/probe-control --timeout=180s
 kubectl -n secopsmesh-lab port-forward service/packet-probe 18091:8080 > .runtime/probe-forward.log 2>&1 &
 probe_pid=$!
 # This fixed disposable-lab command creates a real pods/exec audit event; it is never an application remediation capability.

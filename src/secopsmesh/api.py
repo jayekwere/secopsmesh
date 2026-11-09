@@ -11,6 +11,7 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
+from prometheus_client import CollectorRegistry, Gauge, generate_latest
 from pydantic import BaseModel, ConfigDict, ValidationError
 from sqlalchemy import func, select
 
@@ -137,7 +138,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(LimitsMiddleware, settings=settings)
 
     @app.exception_handler(Denied)
-    async def denied(_, exc):
+    def denied(request, exc):
+        actor = getattr(request.state, "principal", None)
+        if actor:
+            with db.session() as s:
+                db.lock(s, actor.tenant)
+                db.audit(
+                    s,
+                    actor.tenant,
+                    actor.name,
+                    "authorization.denied",
+                    {"path": request.url.path[:256], "reason": str(exc)[:256]},
+                )
         return JSONResponse({"detail": str(exc)}, status_code=403)
 
     @app.exception_handler(AdapterError)
@@ -371,11 +383,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/mcp")
     def mcp(body: dict, p: Principal = Depends(reader)):
-        if body.get("jsonrpc") != "2.0" or body.get("method") not in {
-            "initialize",
-            "tools/list",
-            "tools/call",
-        }:
+        if (
+            body.get("jsonrpc") != "2.0"
+            or not isinstance(body.get("method"), str)
+            or body.get("method")
+            not in {
+                "initialize",
+                "tools/list",
+                "tools/call",
+            }
+        ):
             raise Denied("unsupported read-only MCP method")
         method = body["method"]
         result: dict
@@ -403,13 +420,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             }
         else:
             params = body.get("params", {})
+            if not isinstance(params, dict):
+                raise Denied("invalid MCP parameters")
             args = params.get("arguments", {})
             if (
-                set(args) != {"incident_id"}
+                not isinstance(args, dict)
+                or set(args) != {"incident_id"}
                 or not isinstance(args.get("incident_id"), str)
                 or len(args["incident_id"]) > 64
             ):
                 raise Denied("invalid MCP arguments")
+            if not isinstance(params.get("name"), str):
+                raise Denied("invalid MCP tool name")
             result = {
                 "content": [
                     {
@@ -569,11 +591,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/metrics", response_class=PlainTextResponse)
     def metrics(p: Principal = Depends(reader)):
         data = overview(p)
-        return "".join(
-            f"# TYPE secopsmesh_{k} gauge\nsecopsmesh_{k} {v}\n"
-            for k, v in data.items()
-            if type(v) is int
+        registry = CollectorRegistry()
+        for key, value in data.items():
+            if type(value) is int:
+                Gauge(
+                    "secopsmesh_" + key, "Tenant-scoped " + key.replace("_", " "), registry=registry
+                ).set(value)
+        receiving = Gauge(
+            "secopsmesh_source_receiving",
+            "Evidence received in the last fifteen minutes",
+            ["source"],
+            registry=registry,
         )
+        for source in sources(p):
+            receiving.labels(source["source"]).set(source["health"] == "receiving")
+        return generate_latest(registry).decode()
 
     dist = Path("frontend/dist")
     if dist.exists():

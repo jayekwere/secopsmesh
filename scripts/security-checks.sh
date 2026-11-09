@@ -13,6 +13,8 @@ helm lint deploy/helm/secopsmesh --set-string image.digest=sha256:00000000000000
 helm template secopsmesh deploy/helm/secopsmesh --set-string image.digest=sha256:0000000000000000000000000000000000000000000000000000000000000000 --set databaseCidr=10.0.0.0/8 > .runtime/iac/deployment.yaml
 cp Dockerfile compose.yaml .runtime/iac/
 .runtime/tools/trivy config --exit-code 1 --severity HIGH,CRITICAL --format json --output reports/iac-scan.json .runtime/iac
-.runtime/tools/trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL --format json --output reports/image-scan.json secopsmesh:local
 .runtime/tools/trivy image --format cyclonedx --output reports/sbom.cdx.json secopsmesh:local
 test -s reports/sbom.cdx.json
+.runtime/tools/trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL --format json --output reports/image-scan.json secopsmesh:local
+.runtime/tools/trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL --format json --output reports/gateway-image-scan.json caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
+.runtime/tools/trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL --format json --output reports/database-image-scan.json postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac

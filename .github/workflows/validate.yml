@@ -90,7 +90,7 @@ jobs:
           .venv/bin/python scripts/compose-config.py
           docker compose config --quiet
           docker compose build
-          docker run --rm --network none --read-only --cap-drop ALL --entrypoint python secopsmesh:local -c 'import secopsmesh.api; print("nonroot runtime import passed")'
+          docker run --rm --network none --read-only --cap-drop ALL --entrypoint python secopsmesh:local -c 'import secopsmesh.api, boto3, azure.identity, azure.eventhub; from google.cloud import pubsub_v1; print("nonroot core and provider imports passed")'
           docker compose up -d --wait --wait-timeout 180
           .venv/bin/secopsmesh seed --tokens .runtime/compose/tokens.json
           .venv/bin/python scripts/container-acceptance.py

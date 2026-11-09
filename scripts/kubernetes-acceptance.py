@@ -79,12 +79,14 @@ baseline = None
 for _ in range(30):
     try:
         baseline = httpx.get(target["probe_url"], timeout=3, trust_env=False).json()
-        if baseline.get("reachable") is True:
+        if baseline.get("reachable") is True and baseline.get("control_reachable") is True:
             break
     except httpx.HTTPError:
         pass
     time.sleep(1)
-assert baseline and baseline["reachable"] is True, "baseline traffic must work before containment"
+assert baseline and baseline["reachable"] is True and baseline["control_reachable"] is True, (
+    "baseline and control traffic must work before containment"
+)
 processes = []
 with tempfile.TemporaryDirectory(prefix="mesh-kube-acceptance-") as temporary:
     directory = Path(temporary)
@@ -156,7 +158,8 @@ with tempfile.TemporaryDirectory(prefix="mesh-kube-acceptance-") as temporary:
 
             contained = execute_approved(plan)
             blocked = httpx.get(target["probe_url"], timeout=4, trust_env=False).json()
-            assert blocked["reachable"] is False
+            assert blocked["reachable"] is False and blocked["control_reachable"] is True
+            assert blocked["reason"] == "timeout"
             repeated = call("/api/actions/" + plan["id"] + "/execute", "executor", {})
             assert repeated == contained
             rollback = call(
@@ -170,7 +173,8 @@ with tempfile.TemporaryDirectory(prefix="mesh-kube-acceptance-") as temporary:
             )
             restored = execute_approved(rollback)
             after = httpx.get(target["probe_url"], timeout=4, trust_env=False).json()
-            assert after["reachable"] is True
+            assert after["reachable"] is True and after["control_reachable"] is True
+            assert after["reason"] == "http_200"
             output = {
                 "generated_at": stamp(),
                 "synthetic_lab": True,

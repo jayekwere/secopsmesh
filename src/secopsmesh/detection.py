@@ -71,7 +71,10 @@ def evaluate(rules: list[Rule], events: list[tuple[str, Finding]]) -> list[dict]
                     len({f.origin_ref or eid for eid, f in group}) >= rule.min_events
                     and len({f.source for _, f in group}) >= rule.min_sources
                 ):
-                    groups.append(group)
+                    if groups and groups[-1][0][0] == group[0][0]:
+                        groups[-1] = group
+                    else:
+                        groups.append(group)
         for group in groups:
             ids = sorted(eid for eid, _ in group)
             results.append(
@@ -83,12 +86,6 @@ def evaluate(rules: list[Rule], events: list[tuple[str, Finding]]) -> list[dict]
                     "evidence_ids": ids,
                 }
             )
-    # Keep the maximal evidence set for each correlation rule, all individual single hits.
-    return [
-        r
-        for r in results
-        if not any(
-            r["rule_id"] == other["rule_id"] and set(r["evidence_ids"]) < set(other["evidence_ids"])
-            for other in results
-        )
-    ]
+    # Sliding-window starts are monotonic. Replacing an identical start above keeps maximal
+    # windows without pairwise evidence-subset comparisons across the entire result set.
+    return results

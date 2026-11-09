@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import httpx
@@ -8,6 +9,27 @@ from secopsmesh.domain import canonical
 from secopsmesh.investigation import Investigator
 from secopsmesh.labdata import fixtures
 from secopsmesh.policy import Denied
+
+
+def test_external_ai_request_has_a_cancellable_total_deadline():
+    from secopsmesh.investigation import claude_request
+
+    cancelled = []
+
+    async def handler(request):
+        try:
+            await asyncio.sleep(1)
+        finally:
+            cancelled.append(True)
+        return httpx.Response(200, json={})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            with pytest.raises(TimeoutError):
+                await claude_request("synthetic-key", {}, client=client, deadline=0.01)
+
+    asyncio.run(run())
+    assert cancelled == [True]
 
 
 def test_investigation_citations_and_history(client, seeded):

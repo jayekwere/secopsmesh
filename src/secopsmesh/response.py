@@ -78,7 +78,8 @@ class KubernetesResponse:
 
     def __init__(self, target: dict, client: httpx.Client | None = None):
         self.target = target
-        if target.get("ca_file") is False:
+        self.baseline: dict | None = None
+        if target.get("ca_file") is False or target.get("probe_ca_file") is False:
             raise ResponseError("Kubernetes TLS verification cannot be disabled")
         if not re.fullmatch(r"secopsmesh-lab(?:-[a-z0-9-]+)?", target["namespace"]):
             raise ResponseError("namespace is not a disposable lab")
@@ -93,6 +94,12 @@ class KubernetesResponse:
             verify=target.get("ca_file", True),
             headers={"Authorization": "Bearer " + Path(target["token_file"]).read_text().strip()},
         )
+        self.probe_client = client or httpx.Client(
+            timeout=5,
+            follow_redirects=False,
+            trust_env=False,
+            verify=target.get("probe_ca_file", True),
+        )
         origin = urlparse(target["url"])
         if (
             origin.scheme != "https"
@@ -106,6 +113,7 @@ class KubernetesResponse:
             probe_origin = urlparse(target["probe_url"])
             if (
                 probe_origin.username
+                or probe_origin.query
                 or probe_origin.fragment
                 or probe_origin.scheme not in {"http", "https"}
             ):
@@ -142,7 +150,39 @@ class KubernetesResponse:
             },
         }
 
+    def probe(self) -> dict:
+        if not self.target.get("probe_url"):
+            raise ResponseError("independent packet probe is required")
+        response = self.probe_client.get(self.target["probe_url"], headers={"Authorization": ""})
+        response.raise_for_status()
+        if len(response.content) > 4096:
+            raise ResponseError("probe response exceeds budget")
+        proof = response.json()
+        if (
+            proof.get("schema_version") != "1.0"
+            or proof.get("target") != self.target["label"]
+            or type(proof.get("reachable")) is not bool
+            or type(proof.get("control_reachable")) is not bool
+        ):
+            raise ResponseError("probe contract or target mismatch")
+        return {**proof, "checked_at": now().isoformat()}
+
+    def preflight(self, plan: dict) -> dict:
+        proof = self.probe()
+        expected = plan["action"] == "contain"
+        reason = "http_200" if expected else "timeout"
+        if (
+            proof["control_reachable"] is not True
+            or proof["reachable"] is not expected
+            or proof.get("reason") != reason
+        ):
+            raise ResponseError("positive baseline/control measurement is required before response")
+        self.baseline = proof
+        return proof
+
     def apply(self, plan: dict) -> dict:
+        if self.baseline is None:
+            raise ResponseError("durable preflight evidence is required")
         if plan["action"] == "contain":
             expected = self.policy(plan)
             response = self.client.post(self.collection, json=expected)
@@ -196,14 +236,28 @@ class KubernetesResponse:
             policy_ok = response.status_code == 404
         # Policy existence alone never establishes datapath enforcement.
         reachable = None
+        proof: dict = {}
         if self.target.get("probe_url"):
-            probe = self.client.get(self.target["probe_url"], headers={"Authorization": ""})
-            probe.raise_for_status()
-            reachable = probe.json().get("reachable")
+            proof = self.probe()
+            reachable = proof["reachable"]
         expected_reachable = plan["action"] == "rollback"
+        baseline = self.baseline or {}
+        baseline_ok = (
+            bool(baseline)
+            and baseline.get("target") == self.target["label"]
+            and baseline.get("control_reachable") is True
+            and baseline.get("reachable") is (not expected_reachable)
+        )
+        reason_ok = proof.get("reason") == ("http_200" if expected_reachable else "timeout")
         return {
-            "verified": policy_ok and reachable is expected_reachable,
+            "verified": policy_ok
+            and baseline_ok
+            and proof.get("control_reachable") is True
+            and reachable is expected_reachable
+            and reason_ok,
             "policy_readback": policy_ok,
+            "baseline_present": baseline_ok,
+            "probe": proof,
             "reachable": reachable,
             "enforcement": "packet probe" if reachable is not None else "unverified",
             "checked_at": now().isoformat(),
@@ -211,6 +265,8 @@ class KubernetesResponse:
 
     def close(self) -> None:
         self.client.close()
+        if self.probe_client is not self.client:
+            self.probe_client.close()
 
 
 def response_adapter(target: dict):

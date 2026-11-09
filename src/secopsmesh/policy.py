@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
+from urllib.parse import urlparse
 
 from .config import Principal, Settings
 from .domain import canonical, digest
@@ -25,16 +27,46 @@ def target_policy(settings: Settings, tenant: str, target_id: str) -> dict:
     target = settings.targets.get(target_id)
     if not target or target["tenant"] != tenant or target.get("enabled") is not True:
         raise Denied("target is not enabled for this tenant")
-    if target["kind"] == "kubernetes" and not target.get("namespace", "").startswith(
-        "secopsmesh-lab"
+    origin = urlparse(target.get("url", ""))
+    if (
+        origin.scheme not in {"http", "https"}
+        or not origin.hostname
+        or origin.username
+        or origin.query
+        or origin.fragment
+        or origin.path not in {"", "/"}
     ):
-        raise Denied("Kubernetes response is restricted to a disposable lab namespace")
+        raise Denied("response inventory requires a credential-free fixed origin")
+    if target["kind"] == "kubernetes":
+        if (
+            not re.fullmatch(r"secopsmesh-lab(?:-[a-z0-9-]+)?", target.get("namespace", ""))
+            or origin.scheme != "https"
+            or target.get("ca_file") is False
+        ):
+            raise Denied("Kubernetes response requires verified TLS and a disposable lab namespace")
     return target
 
 
 def target_fingerprint(target: dict) -> str:
     # Bind target identity and scope, allowing credential rotation without changing the action.
     return digest({k: v for k, v in target.items() if k != "key"})
+
+
+def target_scope(target: dict) -> dict:
+    return {
+        k: target[k]
+        for k in [
+            "kind",
+            "asset",
+            "source_family",
+            "environment",
+            "collector_instance",
+            "namespace",
+            "label",
+            "url",
+        ]
+        if k in target
+    }
 
 
 def approval_signature(settings: Settings, row: Action) -> str:

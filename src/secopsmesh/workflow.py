@@ -86,6 +86,7 @@ class Workflow:
             if result.rowcount != 1:
                 raise Denied("concurrent claim lost")
             plan = dict(row.plan)
+            baseline = row.result.get("baseline")
             self.db.audit(
                 s,
                 p.tenant,
@@ -100,6 +101,24 @@ class Workflow:
         state = "ambiguous"
         try:
             adapter = self.factory(target)
+            if not reconcile and hasattr(adapter, "preflight"):
+                baseline = adapter.preflight(plan)
+                with self.db.session() as s:
+                    self.db.lock(s, p.tenant)
+                    claimed = s.get(Action, action_id)
+                    if claimed is None or claimed.state != "executing":
+                        raise Denied("execution claim changed during preflight")
+                    execution_policy(self.settings, claimed, p, now().timestamp())
+                    claimed.result = {**claimed.result, "baseline": baseline}
+                    self.db.audit(
+                        s,
+                        p.tenant,
+                        p.name,
+                        "action.preflight",
+                        {"id": action_id, "baseline": baseline},
+                    )
+            if hasattr(adapter, "baseline"):
+                adapter.baseline = baseline
             if not reconcile:
                 receipt = adapter.apply(plan)
             verification = adapter.verify(plan)
@@ -124,7 +143,7 @@ class Workflow:
                 "verification": verification,
                 "state": state,
             }
-            row.result = {**record, "history": (history + [record])[-20:]}
+            row.result = {**record, "baseline": baseline, "history": (history + [record])[-20:]}
             self.db.audit(s, p.tenant, p.name, "action." + state, {"id": row.id, "outcome": record})
             return action_view(row)
 

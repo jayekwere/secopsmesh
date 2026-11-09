@@ -9,7 +9,7 @@ from .adapters import parse
 from .config import Principal, Settings
 from .detection import evaluate, load_rules
 from .domain import Finding, PlanRequest, digest, now, stamp
-from .policy import POLICY_VERSION, Denied, require, target_fingerprint, target_policy
+from .policy import POLICY_VERSION, Denied, require, target_fingerprint, target_policy, target_scope
 from .store import Action, Database, Event, Incident, SourceState
 
 
@@ -191,6 +191,10 @@ class Engine:
                         for tid, target in self.settings.targets.items():
                             if (
                                 target.get("asset") == finding.asset
+                                and target.get("source_family") == finding.source.split(".")[0]
+                                and target.get("environment") == finding.environment
+                                and target.get("collector_instance") == finding.collector_instance
+                                and target.get("namespace", "") == finding.namespace
                                 and target.get("tenant") == p.tenant
                                 and target.get("enabled")
                             ):
@@ -273,6 +277,7 @@ class Engine:
             "action": request.action,
             "original_action_id": request.original_action_id,
             "target_fingerprint": target_fingerprint(target),
+            "target_scope": target_scope(target),
             "policy_version": POLICY_VERSION,
             "evidence_digest": digest(sorted(incident.data["evidence_ids"])),
             "expires": expires,

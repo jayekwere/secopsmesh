@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-09T00:27:02.363195+00:00",
+  "generated_at": "2026-11-09T00:39:10.462146+00:00",
   "synthetic": true,
   "transport": "real loopback HTTP between separate API and response processes",
   "live_cloud_acceptance": false,
@@ -11,35 +11,43 @@
       "status": "passed",
       "telemetry": "synthetic Wazuh-compatible record",
       "response": "real local application traffic gate over HTTP; not host firewall isolation",
-      "incident_id": "54a04a2dd2b03addd63a739b936c48c9ad93a0e44f8a3be3aab647a8d73d49cd",
-      "investigation_id": "68766251ab6d4b9eb233870bd4bebab8",
+      "incident_id": "d5ed3009aa30634596c376c831b03bb96bbaf6df9644f77349edc7c90342b09c",
+      "investigation_id": "e2e18b662685412bb7243a6ecee88fa7",
       "containment": {
-        "id": "b4de2842b11d4609b6964d856e78619f",
-        "incident_id": "54a04a2dd2b03addd63a739b936c48c9ad93a0e44f8a3be3aab647a8d73d49cd",
+        "id": "4c5501939f384ed4a327349279fbb6f3",
+        "incident_id": "d5ed3009aa30634596c376c831b03bb96bbaf6df9644f77349edc7c90342b09c",
         "state": "verified",
-        "fingerprint": "e23f6755775063adeb06330a51fe8fad7232ab0630604cc816bd974fa5813909",
+        "fingerprint": "48da1d77781dc12009aa4c356869cbf5a63b9caee83f6dcb3b6d1f08eb7ec3e8",
         "requester": "lab-analyst",
         "approver": "lab-approver",
-        "expires": 1794184922.187392,
+        "expires": 1794185650.294992,
         "attempts": 1,
         "plan": {
-          "id": "b4de2842b11d4609b6964d856e78619f",
+          "id": "4c5501939f384ed4a327349279fbb6f3",
           "tenant": "lab",
-          "incident_id": "54a04a2dd2b03addd63a739b936c48c9ad93a0e44f8a3be3aab647a8d73d49cd",
+          "incident_id": "d5ed3009aa30634596c376c831b03bb96bbaf6df9644f77349edc7c90342b09c",
           "target": "lab-host",
           "action": "contain",
           "original_action_id": null,
-          "target_fingerprint": "b879f20bdc41d434037213402e3c09635d6ce10ddbe89310197c2e395eab559e",
+          "target_fingerprint": "d160ff471c425bc28409e42193b03a79a3d0694a6362f7a94209bdd4e4c5d86d",
+          "target_scope": {
+            "kind": "lab",
+            "asset": "lab-host-01",
+            "source_family": "wazuh",
+            "environment": "wazuh",
+            "collector_instance": "default",
+            "url": "http://127.0.0.1:60831"
+          },
           "policy_version": "1.0",
-          "evidence_digest": "ef6e0028086ad45a9c6b82a31f00c25e16af860db44436a0608d61ea4641ad41",
-          "expires": 1794184922.187392
+          "evidence_digest": "f2e479680aa6488b72affc7394251e4d5c96a81c2cecd1188ab6b15850975d6d",
+          "expires": 1794185650.294992
         },
         "result": {
-          "at": "2026-11-09T00:27:02.254572+00:00",
+          "at": "2026-11-09T00:39:10.353734+00:00",
           "reconcile": false,
           "receipt": {
             "receipt": {
-              "id": "b4de2842b11d4609b6964d856e78619f",
+              "id": "4c5501939f384ed4a327349279fbb6f3",
               "contained": true,
               "scope": "application traffic gate"
             },
@@ -49,18 +57,19 @@
             "verified": true,
             "observed_status": 403,
             "expected_status": 403,
-            "owner": "b4de2842b11d4609b6964d856e78619f",
+            "owner": "4c5501939f384ed4a327349279fbb6f3",
             "enforcement": "application traffic gate",
-            "checked_at": "2026-11-09T00:27:02.253991+00:00"
+            "checked_at": "2026-11-09T00:39:10.353077+00:00"
           },
           "state": "verified",
+          "baseline": null,
           "history": [
             {
-              "at": "2026-11-09T00:27:02.254572+00:00",
+              "at": "2026-11-09T00:39:10.353734+00:00",
               "reconcile": false,
               "receipt": {
                 "receipt": {
-                  "id": "b4de2842b11d4609b6964d856e78619f",
+                  "id": "4c5501939f384ed4a327349279fbb6f3",
                   "contained": true,
                   "scope": "application traffic gate"
                 },
@@ -70,9 +79,9 @@
                 "verified": true,
                 "observed_status": 403,
                 "expected_status": 403,
-                "owner": "b4de2842b11d4609b6964d856e78619f",
+                "owner": "4c5501939f384ed4a327349279fbb6f3",
                 "enforcement": "application traffic gate",
-                "checked_at": "2026-11-09T00:27:02.253991+00:00"
+                "checked_at": "2026-11-09T00:39:10.353077+00:00"
               },
               "state": "verified"
             }
@@ -80,32 +89,40 @@
         }
       },
       "rollback": {
-        "id": "e3d7ffdd5f3d443ca7c2b8758c3b1452",
-        "incident_id": "54a04a2dd2b03addd63a739b936c48c9ad93a0e44f8a3be3aab647a8d73d49cd",
+        "id": "a90520b57d8e460ea815a45c98f1d7c0",
+        "incident_id": "d5ed3009aa30634596c376c831b03bb96bbaf6df9644f77349edc7c90342b09c",
         "state": "verified",
-        "fingerprint": "afe0fdc7d0daaa369d3b522a5be926fa29b1b6318ab500787979f66bcee31034",
+        "fingerprint": "27f6ba900330317b0df057e4fab69ab2a127188518278fd55fa7dd7c9a70da45",
         "requester": "lab-analyst",
         "approver": "lab-approver",
-        "expires": 1794184922.270219,
+        "expires": 1794185650.370425,
         "attempts": 1,
         "plan": {
-          "id": "e3d7ffdd5f3d443ca7c2b8758c3b1452",
+          "id": "a90520b57d8e460ea815a45c98f1d7c0",
           "tenant": "lab",
-          "incident_id": "54a04a2dd2b03addd63a739b936c48c9ad93a0e44f8a3be3aab647a8d73d49cd",
+          "incident_id": "d5ed3009aa30634596c376c831b03bb96bbaf6df9644f77349edc7c90342b09c",
           "target": "lab-host",
           "action": "rollback",
-          "original_action_id": "b4de2842b11d4609b6964d856e78619f",
-          "target_fingerprint": "b879f20bdc41d434037213402e3c09635d6ce10ddbe89310197c2e395eab559e",
+          "original_action_id": "4c5501939f384ed4a327349279fbb6f3",
+          "target_fingerprint": "d160ff471c425bc28409e42193b03a79a3d0694a6362f7a94209bdd4e4c5d86d",
+          "target_scope": {
+            "kind": "lab",
+            "asset": "lab-host-01",
+            "source_family": "wazuh",
+            "environment": "wazuh",
+            "collector_instance": "default",
+            "url": "http://127.0.0.1:60831"
+          },
           "policy_version": "1.0",
-          "evidence_digest": "ef6e0028086ad45a9c6b82a31f00c25e16af860db44436a0608d61ea4641ad41",
-          "expires": 1794184922.270219
+          "evidence_digest": "f2e479680aa6488b72affc7394251e4d5c96a81c2cecd1188ab6b15850975d6d",
+          "expires": 1794185650.370425
         },
         "result": {
-          "at": "2026-11-09T00:27:02.289531+00:00",
+          "at": "2026-11-09T00:39:10.387486+00:00",
           "reconcile": false,
           "receipt": {
             "receipt": {
-              "id": "e3d7ffdd5f3d443ca7c2b8758c3b1452",
+              "id": "a90520b57d8e460ea815a45c98f1d7c0",
               "contained": false,
               "scope": "application traffic gate"
             },
@@ -117,16 +134,17 @@
             "expected_status": 200,
             "owner": "",
             "enforcement": "application traffic gate",
-            "checked_at": "2026-11-09T00:27:02.288881+00:00"
+            "checked_at": "2026-11-09T00:39:10.386964+00:00"
           },
           "state": "verified",
+          "baseline": null,
           "history": [
             {
-              "at": "2026-11-09T00:27:02.289531+00:00",
+              "at": "2026-11-09T00:39:10.387486+00:00",
               "reconcile": false,
               "receipt": {
                 "receipt": {
-                  "id": "e3d7ffdd5f3d443ca7c2b8758c3b1452",
+                  "id": "a90520b57d8e460ea815a45c98f1d7c0",
                   "contained": false,
                   "scope": "application traffic gate"
                 },
@@ -138,7 +156,7 @@
                 "expected_status": 200,
                 "owner": "",
                 "enforcement": "application traffic gate",
-                "checked_at": "2026-11-09T00:27:02.288881+00:00"
+                "checked_at": "2026-11-09T00:39:10.386964+00:00"
               },
               "state": "verified"
             }
@@ -152,10 +170,10 @@
       "status": "passed",
       "acceptance": "synthetic offline; no live AWS account",
       "evidence_ids": [
-        "a2412375a783a33ccb7ca90d7c1ce2daaf863b8ad5db6ca75f871729a22778f3",
-        "d1facb0e3f982298b6b7480503c54abe08fb2fd46cb7df2153d8a6b19992ccbc",
-        "1217038825a2a7e160ba17827d7cbb01d6431e39ab2aaf35aecd6a94d7ed9020",
-        "befe079b19f6d9bf89893ff5782540f55511b82a6c98c5ef2b1f5e075202f2bc"
+        "8b9e29a431ca48201bbd7261f967293c3b38ef7de0e38bfbe3a5428830e1b4d3",
+        "bed8dbfe7654b640c3caceaef2490f28a0f6176ac53c600242c0090678e639fb",
+        "473742f35199b296f06e4f3dd31eb48e754af8c9ea3e8719aaccf8cf07fd0a17",
+        "7dd21e9b7f1c8f97e3337f11390d8feeea899116a90e295ca99fac5c4c64333e"
       ]
     },
     {
@@ -165,14 +183,34 @@
       "acceptance": "synthetic provider contracts; live acceptance pending",
       "reports": [
         {
-          "id": "93791f0ed6f84cecb23fd10ce5c6bb46",
+          "id": "425c5294d3cf46299faa5f0f5f8b7ef4",
+          "mode": "deterministic",
+          "summary": "1 evidence records from 1 sources support this incident. Risk 80/100. These records establish observed activity, not compromise certainty.",
+          "evidence_ids": [
+            "30ef3883ca551a6d1aea2cccc24846c6d25b679f9ecf3b3b99087e31ff490c02"
+          ],
+          "next_steps": [
+            "Validate the affected identity and asset with their owners.",
+            "Compare original provider records and authentication history."
+          ],
+          "recommendations": [
+            "Review the exact scoped action plan before independent approval.",
+            "Verify control readback and traffic behavior after any response."
+          ],
+          "quality": [],
+          "untrusted_instructions_detected": false,
+          "synthetic": true,
+          "evidence_truncated": false
+        },
+        {
+          "id": "d4ef079ad3cb44a7afeb60bc10894004",
           "mode": "deterministic",
           "summary": "4 evidence records from 4 sources support this incident. Risk 80/100. These records establish observed activity, not compromise certainty.",
           "evidence_ids": [
-            "c6231438fd831be82e63ecb65c7b3793c38283cc67411d7c12f9f8559aae294d",
-            "9963efc43146eadc37d9ec9a1d19b169f1fe69472989c8b5b5fc9fc69274c30a",
-            "fe22ad53804c8f2f5907351d2b48912f146ab40c873a6af8104ad900b76e045f",
-            "b794e10030e4c7cd8951d68f32648652a3081976afdb767b8d75546e3bfb5a8c"
+            "d749314e14b768c87848347587d3613e6b6a9e4a3432c807206b9e8cba01f3ca",
+            "7529e462fd8782c8ac003e0f7f90a3dc4e449508c717ba7dcdc100e92efba55d",
+            "74c8a80d108389ece55032074837a6317280a76d2b3be42d690e334d744e7951",
+            "6ac4cf183e3e47cb29feed7003af6020dd16e1ae97491c727022cbe10172dcb0"
           ],
           "next_steps": [
             "Validate the affected identity and asset with their owners.",
@@ -188,26 +226,6 @@
           "untrusted_instructions_detected": false,
           "synthetic": true,
           "evidence_truncated": false
-        },
-        {
-          "id": "b2512a865af94717bb0bfa67a7273cba",
-          "mode": "deterministic",
-          "summary": "1 evidence records from 1 sources support this incident. Risk 80/100. These records establish observed activity, not compromise certainty.",
-          "evidence_ids": [
-            "7b4aa48c53a690f5f7255c93eedc76e802d64b80e17992f7cbfa380a86468bf2"
-          ],
-          "next_steps": [
-            "Validate the affected identity and asset with their owners.",
-            "Compare original provider records and authentication history."
-          ],
-          "recommendations": [
-            "Review the exact scoped action plan before independent approval.",
-            "Verify control readback and traffic behavior after any response."
-          ],
-          "quality": [],
-          "untrusted_instructions_detected": false,
-          "synthetic": true,
-          "evidence_truncated": false
         }
       ]
     },
@@ -218,17 +236,17 @@
       "acceptance": "synthetic Pub/Sub and SCC contracts; live acceptance pending",
       "accepted": {
         "accepted": [
-          "22a82dc483af00aed7972f002cb849765aaffc6da1fad9d5bdc39d13d540294b"
+          "16ac2e533f4243c1fc792c2c742188531a736e4d7186998c74687fe90311bd23"
         ],
         "duplicates": [],
         "incident_ids": [
-          "ff040492b34c0e3f91843dc3ed9b15dfdaee90e88ed73e99641f84458caff54e"
+          "bdf046e34c37f638aa01bc8f5524be7dc5efa2c8f1e8f23b754c0ee4c0e62aa0"
         ]
       },
       "duplicate": {
         "accepted": [],
         "duplicates": [
-          "22a82dc483af00aed7972f002cb849765aaffc6da1fad9d5bdc39d13d540294b"
+          "16ac2e533f4243c1fc792c2c742188531a736e4d7186998c74687fe90311bd23"
         ],
         "incident_ids": []
       }
@@ -247,64 +265,64 @@
       "status": "passed",
       "relationship": "operator-configured explicit lab identity aliases",
       "incident": {
-        "id": "54a04a2dd2b03addd63a739b936c48c9ad93a0e44f8a3be3aab647a8d73d49cd",
+        "id": "d5ed3009aa30634596c376c831b03bb96bbaf6df9644f77349edc7c90342b09c",
         "title": "Related security activity: lab:hybrid-identity",
         "status": "open",
         "entity": "lab:hybrid-identity",
         "risk": 96,
         "evidence_ids": [
-          "1217038825a2a7e160ba17827d7cbb01d6431e39ab2aaf35aecd6a94d7ed9020",
-          "a2412375a783a33ccb7ca90d7c1ce2daaf863b8ad5db6ca75f871729a22778f3",
-          "befe079b19f6d9bf89893ff5782540f55511b82a6c98c5ef2b1f5e075202f2bc",
-          "d1facb0e3f982298b6b7480503c54abe08fb2fd46cb7df2153d8a6b19992ccbc"
+          "473742f35199b296f06e4f3dd31eb48e754af8c9ea3e8719aaccf8cf07fd0a17",
+          "7dd21e9b7f1c8f97e3337f11390d8feeea899116a90e295ca99fac5c4c64333e",
+          "8b9e29a431ca48201bbd7261f967293c3b38ef7de0e38bfbe3a5428830e1b4d3",
+          "bed8dbfe7654b640c3caceaef2490f28a0f6176ac53c600242c0090678e639fb"
         ],
         "detections": [
           {
-            "id": "2efbe645f76c90804ac5bec0aeb34da583586d4fe9fcb98909b30d6beda3c44e",
+            "id": "0ea407ab0f9dfe9b4cbe30b902eaa203b0db531178bd0442bf79ab1768f7a17d",
             "rule_id": "high-confidence-provider-alert",
             "rule_version": 1,
             "name": "High-severity provider evidence",
             "evidence_ids": [
-              "1217038825a2a7e160ba17827d7cbb01d6431e39ab2aaf35aecd6a94d7ed9020"
+              "473742f35199b296f06e4f3dd31eb48e754af8c9ea3e8719aaccf8cf07fd0a17"
             ]
           },
           {
-            "id": "973b89ecd7f73c305d3147e5556019c24830ac9a18d0abac03ef8de69010e66d",
+            "id": "75f0d556f41089650a201f4b599ff41ec3b73a9d9cf6a153472827668b78d86b",
             "rule_id": "high-confidence-provider-alert",
             "rule_version": 1,
             "name": "High-severity provider evidence",
             "evidence_ids": [
-              "a2412375a783a33ccb7ca90d7c1ce2daaf863b8ad5db6ca75f871729a22778f3"
+              "7dd21e9b7f1c8f97e3337f11390d8feeea899116a90e295ca99fac5c4c64333e"
             ]
           },
           {
-            "id": "88a40c57bee1495c311ec66977efc3ee4272bd052d1348aa6253193fab959ad2",
+            "id": "ebf954321e14a6060b4948a0f9959f455739d774d0cc5a432a82264f193cca8c",
             "rule_id": "high-confidence-provider-alert",
             "rule_version": 1,
             "name": "High-severity provider evidence",
             "evidence_ids": [
-              "befe079b19f6d9bf89893ff5782540f55511b82a6c98c5ef2b1f5e075202f2bc"
+              "8b9e29a431ca48201bbd7261f967293c3b38ef7de0e38bfbe3a5428830e1b4d3"
             ]
           },
           {
-            "id": "d036a1345230a8361c4c74f4ca5ea15766f07578a1507fff7a7b2464c1771846",
+            "id": "8870b6cd135509272b565e4bfe3d65739fed36a6a242d3bb2cdebcb9ba700403",
             "rule_id": "high-confidence-provider-alert",
             "rule_version": 1,
             "name": "High-severity provider evidence",
             "evidence_ids": [
-              "d1facb0e3f982298b6b7480503c54abe08fb2fd46cb7df2153d8a6b19992ccbc"
+              "bed8dbfe7654b640c3caceaef2490f28a0f6176ac53c600242c0090678e639fb"
             ]
           },
           {
-            "id": "e3f236d4e872b6f6204b7c8c0534ed053b5aff5aba495a15e4e6cbabf71f3be2",
+            "id": "89ef2341f256394581ad8977f58980005fd02aba797f21ca077647270376d155",
             "rule_id": "hybrid-identity-pivot",
             "rule_version": 1,
             "name": "Related identity across security sources",
             "evidence_ids": [
-              "1217038825a2a7e160ba17827d7cbb01d6431e39ab2aaf35aecd6a94d7ed9020",
-              "a2412375a783a33ccb7ca90d7c1ce2daaf863b8ad5db6ca75f871729a22778f3",
-              "befe079b19f6d9bf89893ff5782540f55511b82a6c98c5ef2b1f5e075202f2bc",
-              "d1facb0e3f982298b6b7480503c54abe08fb2fd46cb7df2153d8a6b19992ccbc"
+              "473742f35199b296f06e4f3dd31eb48e754af8c9ea3e8719aaccf8cf07fd0a17",
+              "7dd21e9b7f1c8f97e3337f11390d8feeea899116a90e295ca99fac5c4c64333e",
+              "8b9e29a431ca48201bbd7261f967293c3b38ef7de0e38bfbe3a5428830e1b4d3",
+              "bed8dbfe7654b640c3caceaef2490f28a0f6176ac53c600242c0090678e639fb"
             ]
           }
         ],
@@ -312,8 +330,8 @@
           "aws",
           "wazuh"
         ],
-        "last_observed": 1794184022.164891,
-        "updated_at": "2026-11-09T00:27:02.306677+00:00",
+        "last_observed": 1794184750.277603,
+        "updated_at": "2026-11-09T00:39:10.402977+00:00",
         "synthetic": true,
         "quality": []
       },
@@ -347,14 +365,14 @@
     "verified_actions": 2,
     "uncertain_actions": 0,
     "synthetic_events": 14,
-    "as_of": "2026-11-09T00:27:02.366775+00:00",
+    "as_of": "2026-11-09T00:39:10.465601+00:00",
     "ai_enabled": false
   },
   "audit_checkpoint": {
     "valid": true,
     "tenant": "lab",
-    "records": 28,
-    "head": "0ec23d48ce9e3f56bead6da797d435c2f54f0ca5a3565fdb72f74d2eed3ff022",
-    "checkpoint_signature": "e88656c5157d676a77ae84fe363a0ad434c595110f420819cb549cb7aa6fa300"
+    "records": 32,
+    "head": "1b7ab407e02b931e4700310665cf9b6987be2144401108a3e65fe3a773b29773",
+    "checkpoint_signature": "bcde56115a1de9d076cf1ca48cd88f4bf55e3f69460d0f0d9750472ab582f519"
   }
 }

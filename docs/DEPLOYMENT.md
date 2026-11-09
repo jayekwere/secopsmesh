@@ -10,7 +10,7 @@ Python 3.12+ and Node 24+ are supported; CI uses Python 3.12 on Ubuntu. Install 
 |---|---|---|
 | `config.json` | API process | Hash-only principal map, approval/audit key, database URL, aliases, target metadata; no lab response key |
 | `executor-config.json` | Executor process | Same authority configuration plus narrowly scoped response credential |
-| `tokens.json` | Operator/test harness only | Five distinct random role credentials; never mounted into application containers |
+| `tokens.json` | Operator/test harness only | Five distinct random role credentials plus a second-tenant observer for isolation tests; never mounted into application containers |
 | `mesh.db` | API and executor | SQLite operational records |
 | `lab.db` | Lab response process only | Gate ownership and command idempotency |
 
@@ -22,7 +22,7 @@ Run lab, executor and API independently. `secopsmesh worker --once` (with inject
 
 `scripts/compose-config.py` creates separate ignored env files for API, executor, lab and PostgreSQL. It refuses to overwrite an existing configuration. The API never mounts the raw token file; host-side seeding sends only the collector credential. Container images are built from digest-pinned Python and Node bases, run as UID 10001, and have read-only roots, dropped capabilities, no-new-privileges, PID/memory limits and bounded writable tmpfs. The database image and state volumes are separate.
 
-The API and executor share a PostgreSQL state network. Only the executor and lab join the response network. Networks are internal; external AI/provider polling is unavailable until the operator deliberately supplies controlled egress. Only API port 8080 is published on host loopback. The executor and target are not publicly published. The local internal network uses HTTP; beyond an isolated lab, provide authenticated TLS/mTLS transport and explicit egress policy.
+The API and executor share a PostgreSQL state network. Only the executor and lab join the response network. Application networks are internal; external AI/provider polling is unavailable until the operator deliberately supplies controlled egress. A fixed Caddy gateway bridges the ingress network to host loopback port 8080. Only that gateway is published; the API, executor and target have no host port. The gateway has no runtime admin API. The local internal network uses HTTP; beyond an isolated lab, provide authenticated TLS/mTLS transport and explicit egress policy.
 
 ```sh
 .venv/bin/python scripts/compose-config.py
@@ -39,7 +39,7 @@ docker compose logs --tail=100 api executor lab
 
 The optional chart in `deploy/helm/secopsmesh` uses externally created secrets and an externally managed PostgreSQL URL. It does not provision cloud resources or a database. Rendering/linting is distinct from operational live acceptance. Supply an immutable image digest, ingress TLS, operational database backups, and explicit network policy for your actual endpoints before considering a real deployment.
 
-Response is restricted to a disposable `secopsmesh-lab` namespace family. The real acceptance job creates its **own named kind cluster** and isolated kubeconfig, installs pinned Cilium, loads the built app image, generates an actual pods/exec audit event, then runs the application workflow. A separate probe pod measures baseline traffic, blocked traffic and restored traffic. A response service account cannot list cluster namespaces; admission denies selecting another workload. This is isolated lab acceptance, not validation of an arbitrary production CNI installation.
+Response is restricted to a disposable `secopsmesh-lab` namespace family. The real acceptance job creates its **own named kind cluster** and isolated kubeconfig, installs pinned Cilium, loads the built app image, generates an actual pods/exec audit event, then runs the application workflow. A separate probe pod measures baseline traffic, blocked traffic and restored traffic against a healthy control endpoint. Positive preflight evidence is durably recorded before mutation. A response service account cannot list cluster namespaces; admission denies selecting another workload. This is isolated lab acceptance, not validation of an arbitrary production CNI installation.
 
 Run this only on an existing authorized disposable Linux Docker runner:
 
