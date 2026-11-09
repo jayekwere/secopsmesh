@@ -20,10 +20,14 @@ services:
       timeout: 3s
       retries: 30
   db:
-    image: postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac
+    image: secopsmesh-db:local
+    build: {context: ., dockerfile: Dockerfile.database}
     env_file: .runtime/compose/db.env
     volumes: [database:/var/lib/postgresql/data]
     networks: [state]
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=32m', '/var/run/postgresql:rw,noexec,nosuid,size=16m,uid=70,gid=70']
+    cap_drop: [ALL]
     healthcheck:
       test: [CMD-SHELL, pg_isready -U mesh -d mesh]
       interval: 3s

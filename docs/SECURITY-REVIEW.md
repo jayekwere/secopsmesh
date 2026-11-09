@@ -17,4 +17,6 @@ The final verification pass requires durable positive Kubernetes preflight evide
 
 The expanded scan blocked the previous Caddy gateway image for CVE-2026-78661 in bundled `golang.org/x/net` v0.60.0. The gateway now uses a digest-pinned official Nginx image with a fixed, nonroot proxy configuration. The final image scan and Compose acceptance must pass before release; no advisory suppression was added.
 
+It also identified old Go standard-library advisories in the upstream database image's `gosu` privilege helper. The shipped database image removes that unused helper, starts directly as PostgreSQL UID 70, drops all capabilities and uses a read-only root with bounded socket/tmp directories. The actual PostgreSQL engine remains the pinned upstream version. Container acceptance exercises initialization, durable operational writes and response/rollback against this hardened database image.
+
 Residual production risks remain explicit: trusted API/executor database/signing authority, operator identity lifecycle, ingress-wide bounds, external audit checkpoints, source redaction limits, provider live onboarding, and trusted network-probe interpretation. See [security configuration](SECURITY-CONFIGURATION.md) and [validation](VALIDATION.md). The source review and release test reports are separate evidence classes.

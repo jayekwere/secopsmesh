@@ -22,6 +22,8 @@ Run lab, executor and API independently. `secopsmesh worker --once` (with inject
 
 `scripts/compose-config.py` creates separate ignored env files for API, executor, lab and PostgreSQL. It refuses to overwrite an existing configuration. The API never mounts the raw token file; host-side seeding sends only the collector credential. Container images are built from digest-pinned Python and Node bases, run as UID 10001, and have read-only roots, dropped capabilities, no-new-privileges, PID/memory limits and bounded writable tmpfs. The database image and state volumes are separate.
 
+The database image derives from pinned PostgreSQL 17, removes the unused `gosu` helper and starts directly as UID 70 with a read-only root and writable database volume/socket tmpfs. This avoids a privileged initialization process. Its initialization and application transactions are exercised by Compose acceptance; the separate CI PostgreSQL contract job uses an isolated upstream PostgreSQL 17 service.
+
 The API and executor share a PostgreSQL state network. Only the executor and lab join the response network. Application networks are internal; external AI/provider polling is unavailable until the operator deliberately supplies controlled egress. A fixed Nginx gateway bridges the ingress network to host loopback port 8080. Only that gateway is published; the API, executor and target have no host port. The gateway has no runtime admin API. The local internal network uses HTTP; beyond an isolated lab, provide authenticated TLS/mTLS transport and explicit egress policy.
 
 ```sh
